@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الذكاء لا جنسَ له</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+:root {
+  --ink:        #111118;
+  --ink-soft:   #1e1e2a;
+  --cream:      #f9f5ef;
+  --warm:       #f2ece2;
+  --gold:       #c8923a;
+  --gold-lt:    #e4b96a;
+  --gold-pale:  #fdf3e3;
+  --teal:       #2d6b6b;
+  --teal-lt:    #4a9999;
+  --teal-pale:  #e6f2f2;
+  --rose:       #b05252;
+  --rose-pale:  #f9eaea;
+  --slate:      #3c3c50;
+  --muted:      #888899;
+  --line:       #e2dcd4;
+  --white:      #ffffff;
+}
+ 
+body {
+  background: #e8e2d8;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+ 
+/* ═══════════════════════════════════
+   PAGE WRAPPER
+═══════════════════════════════════ */
+.infographic {
+  width: 900px;
+  margin: 40px auto;
+  background: var(--cream);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.22);
+}
+ 
+/* ═══════════════════════════════════
+   HEADER
+═══════════════════════════════════ */
+.hero {
+  background: var(--ink);
+  padding: 70px 64px 58px;
+  position: relative;
+  overflow: hidden;
+}
+ 
+.hero-geo {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+}
+ 
+.hero-geo circle { fill: none; }
+.hero-geo line { stroke: rgba(200,146,58,0.10); stroke-width: 1; }
+ 
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+ 
+.hero-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid rgba(200,146,58,0.35);
+  padding: 5px 13px;
+  border-radius: 2px;
+}
+ 
+.hero-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: rgba(200,146,58,0.4);
+}
+ 
+.hero-h1 {
+  font-family: 'Cairo', sans-serif;
+  font-size: 72px;
+  font-weight: 900;
+  color: var(--white);
+  line-height: 1.0;
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 2;
+}
+ 
+.hero-h1 .accent { color: var(--gold); }
+ 
+.hero-rule {
+  width: 56px; height: 3px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  margin: 22px 0;
+  position: relative; z-index: 2;
+}
+ 
+.hero-lead {
+  font-size: 16px;
+  font-weight: 300;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.85;
+  max-width: 500px;
+  position: relative; z-index: 2;
+}
+ 
+/* ═══════════════════════════════════
+   ORIGIN BAND
+═══════════════════════════════════ */
+.origin {
+  background: var(--teal);
+  padding: 40px 64px;
+  display: grid;
+  grid-template-columns: 200px 1px 1fr;
+  gap: 36px;
+  align-items: center;
+}
+ 
+.origin-left .eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold-lt);
+  margin-bottom: 10px;
+}
+ 
+.origin-left h2 {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--white);
+  line-height: 1.4;
+}
+ 
+.origin-sep {
+  width: 1px;
+  height: 72px;
+  background: rgba(255,255,255,0.18);
+  margin: auto;
+}
+ 
+.origin-text {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.78);
+  line-height: 2.0;
+}
+ 
+/* ═══════════════════════════════════
+   BODY
+═══════════════════════════════════ */
+.body {
+  padding: 60px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 58px;
+}
+ 
+/* Section heading */
+.sec-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 30px;
+}
+ 
+.sec-icon {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+ 
+.ic-gold { background: rgba(200,146,58,0.12); }
+.ic-teal { background: var(--teal-pale); }
+.ic-rose { background: var(--rose-pale); }
+.ic-ink  { background: rgba(17,17,24,0.07); }
+ 
+.sec-title {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.3;
+}
+ 
+.sec-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 3px;
+  letter-spacing: 0.3px;
+}
+ 
+/* ═══════════════════════════════════
+   STAT BOXES
+═══════════════════════════════════ */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+ 
+.stat-box {
+  background: var(--ink-soft);
+  border-radius: 12px;
+  padding: 24px 18px 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+ 
+.stat-box::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--gold);
+}
+ 
+.stat-num {
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+ 
+.stat-unit {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-lt);
+  margin-bottom: 7px;
+  letter-spacing: 0.3px;
+}
+ 
+.stat-desc {
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.6;
+}
+ 
+/* ═══════════════════════════════════
+   NEUROSCIENCE CARDS
+═══════════════════════════════════ */
+.neuro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 15px;
+}
+ 
+.neuro-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px 20px;
+}
+ 
+.neuro-card .n-ico { font-size: 28px; margin-bottom: 12px; }
+ 
+.neuro-card h4 {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 9px;
+  line-height: 1.45;
+}
+ 
+.neuro-card p {
+  font-size: 12.5px;
+  color: var(--slate);
+  line-height: 1.8;
+}
+ 
+.neuro-card cite {
+  display: block;
+  font-size: 10.5px;
+  font-style: normal;
+  color: var(--muted);
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+ 
+/* ═══════════════════════════════════
+   BAR CHART
+═══════════════════════════════════ */
+.chart-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 30px 28px 24px;
+}
+ 
+.chart-header {
+  margin-bottom: 24px;
+}
+ 
+.chart-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+ 
+.chart-src {
+  font-size: 11px;
+  color: var(--muted);
+}
+ 
+.bar-group { margin-bottom: 16px; }
+ 
+.bar-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+ 
+.bar-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--slate);
+}
+ 
+.bar-pct {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--teal);
+}
+ 
+.bar-track {
+  height: 18px;
+  background: #f0ece6;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+ 
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  position: relative;
+}
+ 
+.bar-fill.women { background: linear-gradient(90deg, var(--teal), var(--teal-lt)); }
+.bar-fill.men   { background: linear-gradient(90deg, rgba(200,146,58,0.55), rgba(228,185,106,0.7)); }
+ 
+.bar-note {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 4px;
+}
+ 
+.chart-legend {
+  display: flex;
+  gap: 22px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+ 
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+}
+ 
+.leg-dot {
+  width: 12px; height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+ 
+/* ═══════════════════════════════════
+   MISCONCEPTIONS — SPLIT GRID
+═══════════════════════════════════ */
+.mis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+ 
+.mis-row {
+  display: contents;
+}
+ 
+.mis-cell {
+  padding: 24px 22px;
+  border-bottom: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+ 
+.mis-cell:nth-child(even) {
+  background: var(--teal-pale);
+  border-left: none;
+}
+ 
+.mis-cell:nth-last-child(-n+2) {
+  border-bottom: none;
+}
+ 
+.badge {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 3px;
+  margin-bottom: 10px;
+}
+ 
+.badge-myth { background: var(--rose-pale); color: var(--rose); }
+.badge-fact { background: rgba(45,107,107,0.1); color: var(--teal); }
+ 
+.mis-cell h4 {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+ 
+.mis-cell p {
+  font-size: 12.5px;
+  color: var(--slate);
+  line-height: 1.8;
+}
+ 
+.mis-cell cite {
+  display: block;
+  font-size: 10.5px;
+  font-style: normal;
+  color: var(--muted);
+  margin-top: 8px;
+}
+ 
+/* ═══════════════════════════════════
+   OVERLAP SECTION
+═══════════════════════════════════ */
+.overlap-panel {
+  background: var(--ink);
+  border-radius: 16px;
+  padding: 40px 44px;
+  position: relative;
+  overflow: hidden;
+}
+ 
+.overlap-panel::before {
+  content: '';
+  position: absolute;
+  top: -100px; left: -100px;
+  width: 350px; height: 350px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(45,107,107,0.2) 0%, transparent 70%);
+}
+ 
+.overlap-panel::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; right: -60px;
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,146,58,0.12) 0%, transparent 70%);
+}
+ 
+.overlap-panel h3 {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--gold);
+  margin-bottom: 10px;
+  position: relative; z-index: 2;
+}
+ 
+.overlap-panel .op-lead {
+  font-size: 14px;
+  color: rgba(255,255,255,0.68);
+  line-height: 1.9;
+  max-width: 520px;
+  margin-bottom: 32px;
+  position: relative; z-index: 2;
+}
+ 
+.op-lead em {
+  color: var(--gold-lt);
+  font-style: normal;
+  font-weight: 600;
+}
+ 
+/* Bell curves SVG */
+.bell-container {
+  position: relative; z-index: 2;
+  margin-bottom: 16px;
+}
+ 
+.bell-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+  margin-top: 6px;
+  position: relative; z-index: 2;
+}
+ 
+.overlap-legend {
+  display: flex;
+  gap: 24px;
+  position: relative; z-index: 2;
+}
+ 
+.ol-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.55);
+}
+ 
+.ol-dot {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+ 
+/* ═══════════════════════════════════
+   REAL WORLD GRID
+═══════════════════════════════════ */
+.world-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+ 
+.world-card {
+  display: flex;
+  gap: 16px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 18px;
+  position: relative;
+  overflow: hidden;
+}
+ 
+.world-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 3px; height: 100%;
+  background: var(--teal);
+}
+ 
+.world-card .w-ico {
+  font-size: 30px;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+ 
+.world-card h4 {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+ 
+.world-card p {
+  font-size: 12.5px;
+  color: var(--slate);
+  line-height: 1.75;
+}
+ 
+.world-card cite {
+  display: block;
+  font-size: 10.5px;
+  font-style: normal;
+  color: var(--muted);
+  margin-top: 7px;
+}
+ 
+/* ═══════════════════════════════════
+   CONCLUSION QUOTE
+═══════════════════════════════════ */
+.conclusion {
+  background: linear-gradient(135deg, #1e3f3f 0%, var(--teal) 100%);
+  border-radius: 16px;
+  padding: 44px 48px;
+  position: relative;
+  overflow: hidden;
+}
+ 
+.conclusion::before {
+  content: '"';
+  position: absolute;
+  top: -24px; left: 32px;
+  font-size: 220px;
+  color: rgba(255,255,255,0.04);
+  font-family: Georgia, serif;
+  line-height: 1;
+  pointer-events: none;
+}
+ 
+.conclusion p {
+  font-size: 17px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.92);
+  line-height: 1.85;
+  position: relative; z-index: 2;
+}
+ 
+.conclusion p em {
+  color: var(--gold-lt);
+  font-style: normal;
+}
+ 
+.conclusion-src {
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 16px;
+  position: relative; z-index: 2;
+  font-style: normal;
+}
+ 
+/* ═══════════════════════════════════
+   DIVIDER
+═══════════════════════════════════ */
+.divider {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 0;
+}
+ 
+/* ═══════════════════════════════════
+   FOOTER / REFERENCES
+═══════════════════════════════════ */
+.footer {
+  background: var(--ink);
+  padding: 44px 64px 36px;
+}
+ 
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 28px;
+}
+ 
+.footer h5 {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+ 
+.footer ul {
+  list-style: none;
+}
+ 
+.footer ul li {
+  font-size: 11px;
+  color: rgba(255,255,255,0.42);
+  line-height: 2.1;
+  padding-right: 14px;
+  position: relative;
+}
+ 
+.footer ul li::before {
+  content: '↗';
+  position: absolute;
+  right: 0;
+  color: var(--gold);
+  opacity: 0.45;
+  font-size: 9px;
+}
+ 
+.footer-note {
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 18px;
+  font-size: 10.5px;
+  color: rgba(255,255,255,0.22);
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+ 
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+ 
+.infographic > * {
+  animation: fadeUp 0.5s ease both;
+}
+</style>
+</head>
+<body>
+<div class="infographic">
+ 
+  <!-- ══ HERO ══ -->
+  <header class="hero">
+    <svg class="hero-geo" viewBox="0 0 900 260" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="820" cy="40" r="160" stroke="rgba(200,146,58,0.08)" stroke-width="1" fill="none"/>
+      <circle cx="820" cy="40" r="100" stroke="rgba(200,146,58,0.06)" stroke-width="1" fill="none"/>
+      <circle cx="820" cy="40" r="50"  stroke="rgba(200,146,58,0.08)" stroke-width="1" fill="none"/>
+      <line x1="0" y1="220" x2="900" y2="220" stroke="rgba(200,146,58,0.06)" stroke-width="1"/>
+      <line x1="0" y1="240" x2="900" y2="240" stroke="rgba(200,146,58,0.04)" stroke-width="1"/>
+      <circle cx="60" cy="60" r="80" stroke="rgba(45,107,107,0.12)" stroke-width="1" fill="none"/>
+    </svg>
+ 
+    <div class="hero-eyebrow">
+      <span class="hero-tag">تحليل علمي محكّم</span>
+      <span class="hero-dot"></span>
+    </div>
+ 
+    <h1 class="hero-h1">الذكاء<br><span class="accent">لا جنسَ له</span></h1>
+    <div class="hero-rule"></div>
+    <p class="hero-lead">
+      دراسة تستند إلى الأبحاث العلمية المحكّمة تفنّد الادعاء بأن المرأة أقل ذكاءً أو كفاءةً من الرجل — وتكشف كيف حوّلت الثقافة تحيزاتها إلى "حقائق علمية" زائفة.
+    </p>
+  </header>
+ 
+  <!-- ══ ORIGIN ══ -->
+  <div class="origin">
+    <div class="origin-left">
+      <div class="eyebrow">السياق التاريخي</div>
+      <h2>من أين جاءت هذه الفكرة؟</h2>
+    </div>
+    <div class="origin-sep"></div>
+    <p class="origin-text">
+      في القرن التاسع عشر، استخدم بعض العلماء قياسات جماجم البشر — وهو ما يُعرف بـ"قياس الجمجمة" — ذريعةً لتبرير تراتبيات اجتماعية راسخة. لم يكن ذلك علمًا بقدر ما كان تحيزًا يلبس لباس العلم. اليوم، أتاحت تقنيات التصوير العصبي وتحليلات البيانات الضخمة اختبار هذه الادعاءات بدقة مختلفة تمامًا — فخرجت النتائج بعكسها.
+    </p>
+  </div>
+ 
+  <!-- ══ BODY ══ -->
+  <div class="body">
+ 
+    <!-- 1. STATS -->
+    <section>
+      <div class="sec-head">
+        <div class="sec-icon ic-gold">📊</div>
+        <div>
+          <div class="sec-title">أرقام لا تُجادَل</div>
+          <div class="sec-sub">التحصيل الأكاديمي العالمي — مصادر OECD وNSF</div>
+        </div>
+      </div>
+ 
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-num">57%</div>
+          <div class="stat-unit">من خريجي الجامعات</div>
+          <div class="stat-desc">إناث في دول منظمة OECD — 2023</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">53%</div>
+          <div class="stat-unit">من الدكتوراه في علم الأحياء</div>
+          <div class="stat-desc">تحصل عليها النساء في الولايات المتحدة — NSF 2022</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">≈ 0</div>
+          <div class="stat-unit">فارق معياري فعلي</div>
+          <div class="stat-desc">في اختبارات الذكاء العام بين الجنسين — Hyde 2005</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">+30%</div>
+          <div class="stat-unit">من باحثات العالم</div>
+          <div class="stat-desc">وترتفع النسبة في كل عقد — اليونسكو 2021</div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- 2. NEUROSCIENCE -->
+    <section>
+      <div class="sec-head">
+        <div class="sec-icon ic-teal">🧠</div>
+        <div>
+          <div class="sec-title">ما تقوله علوم الأعصاب فعلاً</div>
+          <div class="sec-sub">أبحاث التصوير العصبي والوظيفة الإدراكية</div>
+        </div>
+      </div>
+ 
+      <div class="neuro-grid">
+        <div class="neuro-card">
+          <div class="n-ico">🔬</div>
+          <h4>حجم الدماغ ≠ الذكاء</h4>
+          <p>دماغ الرجل أكبر حجمًا بالمطلق، لكن دماغ المرأة يُظهر كثافة أعلى في المادة الرمادية. بعد تصحيح الفروق البدنية بين الجنسين، تتلاشى الفوارق الوظيفية المزعومة.</p>
+          <cite>Gur et al. — Cerebral Cortex, 1999</cite>
+        </div>
+ 
+        <div class="neuro-card">
+          <div class="n-ico">🔗</div>
+          <h4>لا يوجد "دماغ ذكوري" ولا "أنثوي"</h4>
+          <p>تحليل شمل 1,400 دماغ بشري أكد أن الأدمغة لا تنتمي إلى فئتين متمايزتين — بل هي موزاييك فريد من السمات المتداخلة. كل دماغ استثناء.</p>
+          <cite>Joel et al. — PNAS, 2015</cite>
+        </div>
+ 
+        <div class="neuro-card">
+          <div class="n-ico">⚡</div>
+          <h4>الاتصالية العصبية</h4>
+          <p>دراسة على 949 مشاركًا أظهرت اتصالية أعلى بين نصفي الكرة المخية لدى الإناث، ما يرتبط بقدرات التكامل المعلوماتي — وليس بأفضلية أو نقصان.</p>
+          <cite>Ingalhalikar et al. — PNAS, 2014</cite>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- 3. BAR CHART -->
+    <section>
+      <div class="sec-head">
+        <div class="sec-icon ic-teal">📈</div>
+        <div>
+          <div class="sec-title">حضور المرأة في الأكاديميا</div>
+          <div class="sec-sub">نسبة الإناث من حاملات الدكتوراه في الولايات المتحدة — NSF 2022</div>
+        </div>
+      </div>
+ 
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">نسبة الإناث من إجمالي الدكتوراه حسب التخصص</div>
+          <div class="chart-src">المصدر: National Science Foundation — Survey of Earned Doctorates 2022</div>
+        </div>
+ 
+        <div class="bar-group">
+          <div class="bar-meta">
+            <span class="bar-label">العلوم الاجتماعية</span>
+            <span class="bar-pct">59%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill women" style="width:59%"></div></div>
+        </div>
+ 
+        <div class="bar-group">
+          <div class="bar-meta">
+            <span class="bar-label">الطب والعلوم الصحية</span>
+            <span class="bar-pct">57%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill women" style="width:57%"></div></div>
+        </div>
+ 
+        <div class="bar-group">
+          <div class="bar-meta">
+            <span class="bar-label">علم الأحياء</span>
+            <span class="bar-pct">53%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill women" style="width:53%"></div></div>
+        </div>
+ 
+        <div class="bar-group">
+          <div class="bar-meta">
+            <span class="bar-label">الرياضيات والإحصاء</span>
+            <span class="bar-pct">37%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill women" style="width:37%"></div></div>
+          <div class="bar-note">↑ ترتفع هذه النسبة بمعدل 2–3% كل عقد</div>
+        </div>
+ 
+        <div class="bar-group">
+          <div class="bar-meta">
+            <span class="bar-label">الفيزياء والفلك</span>
+            <span class="bar-pct">22%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill women" style="width:22%"></div></div>
+          <div class="bar-note">↑ الفجوة هنا انعكاس لعوامل اجتماعية وثقافية موثّقة، لا لفوارق فطرية</div>
+        </div>
+ 
+        <div class="chart-legend">
+          <div class="leg-item">
+            <div class="leg-dot" style="background:var(--teal)"></div>
+            نسبة الإناث
+          </div>
+          <div class="leg-item" style="font-size:11px; color:var(--muted); max-width:400px;">
+            ملاحظة: في الدول ذات المساواة الجندرية العالية (كفنلندا)، تتلاشى الفجوة في STEM وتتفوق الفتيات أحيانًا في الرياضيات — Guiso et al., Science 2008
+          </div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- 4. MISCONCEPTIONS -->
+    <section>
+      <div class="sec-head">
+        <div class="sec-icon ic-rose">❌</div>
+        <div>
+          <div class="sec-title">المغالطات الشائعة والردّ العلمي عليها</div>
+          <div class="sec-sub">أبرز الحجج المتكررة وما يقوله البحث فعلًا</div>
+        </div>
+      </div>
+ 
+      <div class="mis-grid">
+ 
+        <div class="mis-cell">
+          <div class="badge badge-myth">مغالطة</div>
+          <h4>"المرأة أكثر عاطفيةً وأقل منطقيةً"</h4>
+          <p>يُطرح هذا كأن العاطفة والعقل نقيضان — وهو ثنائي مزيّف. الاستدلال لا يُعاق بالوعي الانفعالي، بل قد يُثريه.</p>
+        </div>
+        <div class="mis-cell">
+          <div class="badge badge-fact">الرد العلمي</div>
+          <h4>التنظيم الانفعالي مهارة معرفية راقية</h4>
+          <p>التحليلات الميتا تُظهر أن الفوارق في الأداء المعرفي بين الجنسين ضئيلة جدًا وغير ذات دلالة عملية. الحكم والتفكير النقدي مستقلان عن النوع.</p>
+          <cite>Hyde — Psychological Bulletin, 2005</cite>
+        </div>
+ 
+        <div class="mis-cell">
+          <div class="badge badge-myth">مغالطة</div>
+          <h4>"الرجال أكثر تباينًا = قمم أعلى في الذكاء"</h4>
+          <p>"فرضية تباين الذكور" تدّعي أن الرجال يمثلون نسبة أعلى في طرفي التوزيع — بما فيها طرف "العباقرة".</p>
+        </div>
+        <div class="mis-cell">
+          <div class="badge badge-fact">الرد العلمي</div>
+          <h4>التباين الفعلي ضئيل وذو أصل اجتماعي</h4>
+          <p>أحدث التحليلات تُظهر أن هذا التباين يتقلص كلما تحسّن وصول المرأة إلى التعليم — مما يدل على أن السبب ثقافي لا بيولوجي.</p>
+          <cite>Reilly et al. — Intelligence, 2019</cite>
+        </div>
+ 
+        <div class="mis-cell">
+          <div class="badge badge-myth">مغالطة</div>
+          <h4>"الرجال متفوقون في العلوم والرياضيات فطريًا"</h4>
+          <p>يُستشهد ببيانات أداء STEM دليلًا على فروق بيولوجية ثابتة.</p>
+        </div>
+        <div class="mis-cell">
+          <div class="badge badge-fact">الرد العلمي</div>
+          <h4>المساواة الجندرية تُنتج تكافؤًا في الأداء</h4>
+          <p>في دول ذات مؤشر مساواة جندرية مرتفع، تتفوق الفتيات أو يتساوين في الرياضيات. الفجوة تتبع المناخ الاجتماعي، لا الجينات.</p>
+          <cite>Guiso et al. — Science, 2008</cite>
+        </div>
+ 
+      </div>
+    </section>
+ 
+    <!-- 5. OVERLAP -->
+    <section>
+      <div class="overlap-panel">
+        <h3>مبدأ التداخل الإحصائي</h3>
+        <p class="op-lead">
+          حتى لو وُجد فارق إحصائي طفيف في متوسط أداء مجموعتين، فإن التوزيع الفعلي يكشف تداخلًا واسعًا بين الأفراد. بمعنى آخر:
+          <em>لا يمكن الاستدلال من الفوارق الجماعية على قدرة أي فرد بعينه.</em>
+          الذكاء خاصية فردية لا جماعية.
+        </p>
+ 
+        <div class="bell-container">
+          <svg viewBox="0 0 760 110" width="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="gW" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#4a9999" stop-opacity="0"/>
+                <stop offset="40%" stop-color="#4a9999" stop-opacity="0.55"/>
+                <stop offset="100%" stop-color="#4a9999" stop-opacity="0.15"/>
+              </linearGradient>
+              <linearGradient id="gM" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#c8923a" stop-opacity="0.15"/>
+                <stop offset="60%" stop-color="#c8923a" stop-opacity="0.45"/>
+                <stop offset="100%" stop-color="#c8923a" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+ 
+            <!-- Women bell (right-shifted slightly in RTL layout) -->
+            <path d="M 40 100 C 90 100, 160 8, 240 8 C 320 8, 390 100, 440 100 Z"
+                  fill="url(#gW)" opacity="0.9"/>
+            <path d="M 40 100 C 90 100, 160 8, 240 8 C 320 8, 390 100, 440 100"
+                  fill="none" stroke="#4a9999" stroke-width="2"/>
+ 
+            <!-- Men bell (left-shifted slightly) -->
+            <path d="M 110 100 C 160 100, 230 8, 310 8 C 390 8, 460 100, 510 100 Z"
+                  fill="url(#gM)" opacity="0.85"/>
+            <path d="M 110 100 C 160 100, 230 8, 310 8 C 390 8, 460 100, 510 100"
+                  fill="none" stroke="#c8923a" stroke-width="2"/>
+ 
+            <!-- Overlap indicator -->
+            <path d="M 160 100 C 185 50, 230 8, 240 8 C 270 8, 320 50, 340 100 Z"
+                  fill="rgba(255,255,255,0.07)"/>
+ 
+            <!-- Overlap bracket -->
+            <line x1="160" y1="103" x2="340" y2="103" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="5,3"/>
+            <text x="250" y="100" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="9.5" font-family="Cairo, sans-serif">
+              منطقة التداخل الواسعة (الغالبية)
+            </text>
+ 
+            <!-- Labels -->
+            <text x="170" y="20" fill="#4a9999" font-size="11" font-family="Cairo, sans-serif" opacity="0.85">الإناث</text>
+            <text x="350" y="20" fill="#c8923a" font-size="11" font-family="Cairo, sans-serif" opacity="0.85">الذكور</text>
+ 
+            <!-- X axis labels -->
+            <text x="40"  y="108" fill="rgba(255,255,255,0.25)" font-size="9" font-family="Cairo">أدنى</text>
+            <text x="700" y="108" fill="rgba(255,255,255,0.25)" font-size="9" font-family="Cairo">أعلى</text>
+            <text x="370" y="108" text-anchor="middle" fill="rgba(255,255,255,0.25)" font-size="9" font-family="Cairo">← توزيع الأداء المعرفي →</text>
+          </svg>
+        </div>
+ 
+        <div class="overlap-legend">
+          <div class="ol-item">
+            <div class="ol-dot" style="background:#4a9999"></div>
+            توزيع القدرات — الإناث
+          </div>
+          <div class="ol-item">
+            <div class="ol-dot" style="background:#c8923a"></div>
+            توزيع القدرات — الذكور
+          </div>
+          <div class="ol-item">
+            <div class="ol-dot" style="background:rgba(255,255,255,0.25)"></div>
+            منطقة التداخل الكبيرة
+          </div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- 6. REAL WORLD -->
+    <section>
+      <div class="sec-head">
+        <div class="sec-icon ic-gold">🌍</div>
+        <div>
+          <div class="sec-title">في الواقع العملي</div>
+          <div class="sec-sub">إنجازات توثّقها الأرقام، لا الادعاءات</div>
+        </div>
+      </div>
+ 
+      <div class="world-grid">
+        <div class="world-card">
+          <div class="w-ico">🏥</div>
+          <div>
+            <h4>الطب والرعاية الصحية</h4>
+            <p>تمثل النساء أكثر من 50% من طلاب كليات الطب في الولايات المتحدة منذ 2019. ودراسة نُشرت في JAMA أثبتت أن مرضى الطبيبات يُسجّلون نتائج أفضل في بعض المؤشرات السريرية.</p>
+            <cite>AAMC 2023 ؛ Tsugawa et al. — JAMA Internal Medicine, 2017</cite>
+          </div>
+        </div>
+ 
+        <div class="world-card">
+          <div class="w-ico">🔭</div>
+          <div>
+            <h4>العلوم والبحث العلمي</h4>
+            <p>تحتل المرأة أكثر من 30% من مناصب الباحثين عالميًا، ونسبة ترتفع في كل تقرير جديد. في بعض دول شمال أوروبا تتجاوز 45%.</p>
+            <cite>UNESCO Science Report, 2021</cite>
+          </div>
+        </div>
+ 
+        <div class="world-card">
+          <div class="w-ico">⚖️</div>
+          <div>
+            <h4>القانون والقضاء</h4>
+            <p>في 36 دولة من دول OECD، تتجاوز نسبة الإناث في كليات الحقوق 50%، وكثيرًا ما يتصدّرن قوائم الخريجين الأوائل.</p>
+            <cite>OECD Education at a Glance, 2023</cite>
+          </div>
+        </div>
+ 
+        <div class="world-card">
+          <div class="w-ico">🎓</div>
+          <div>
+            <h4>نتائج PISA الدولية</h4>
+            <p>في اختبارات PISA 2022 التي شملت أكثر من 80 دولة، تتفوق الفتيات في القراءة بفارق واضح، بينما يتقارب الجنسان في العلوم والرياضيات — مع تباين حسب السياق الثقافي.</p>
+            <cite>OECD PISA 2022 Results</cite>
+          </div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- 7. CONCLUSION -->
+    <section>
+      <div class="conclusion">
+        <p>
+          ما تكشفه هذه الأبحاث ليس أن المرأة متساوية للرجل في كل قياس على الإطلاق — بل أن
+          <em>لا دليل علمي موثوقًا يدعم فكرة أن جنسًا بعينه أدنى ذكاءً أو كفاءةً من الآخر.</em>
+          الفوارق الموجودة صغيرة، كثيرًا ما تكون ذات أصل اجتماعي، ولا تُخبرنا شيئًا عن الفرد أمامنا.
+          في العلم، الأفراد أفراد — لا ممثلون عن فئات.
+        </p>
+        <cite class="conclusion-src">تلخيص تحريري استنادًا إلى مراجعات Hyde 2005، Joel 2015، وتقارير OECD و UNESCO</cite>
+      </div>
+    </section>
+ 
+  </div><!-- end body -->
+ 
+  <!-- ══ FOOTER / REFERENCES ══ -->
+  <footer class="footer">
+    <div class="footer-grid">
+      <div>
+        <h5>المراجع العلمية الرئيسية</h5>
+        <ul>
+          <li>Hyde, J.S. — "The Gender Similarities Hypothesis" — Psychological Bulletin, 2005</li>
+          <li>Joel et al. — "Sex beyond the genitalia" — PNAS, 2015</li>
+          <li>Ingalhalikar et al. — "Sex differences in structural connectome" — PNAS, 2014</li>
+          <li>Guiso et al. — "Culture, Gender, and Math" — Science, 2008</li>
+          <li>Reilly et al. — "Sex differences in variance in intelligence" — Intelligence, 2019</li>
+          <li>Gur et al. — "Sex differences in brain gray and white matter" — Cerebral Cortex, 1999</li>
+        </ul>
+      </div>
+      <div>
+        <h5>مصادر البيانات والإحصاء</h5>
+        <ul>
+          <li>OECD — Education at a Glance, 2023</li>
+          <li>OECD — PISA 2022 Results (Volume I)</li>
+          <li>National Science Foundation — Survey of Earned Doctorates, 2022</li>
+          <li>UNESCO — Science Report: The Race Against Time, 2021</li>
+          <li>AAMC — Diversity in Medicine: Facts and Figures, 2023</li>
+          <li>Tsugawa et al. — JAMA Internal Medicine, 2017</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-note">
+      جميع الإحصاءات مستقاة من مصادر أولية محكّمة — لم يُختلق أي رقم أو دراسة في هذا الإنفوغرافيك
+    </div>
+  </footer>
+ 
+</div><!-- end infographic -->
+</body>
+</html>
