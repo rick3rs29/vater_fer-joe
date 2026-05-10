@@ -1,269 +1,299 @@
-import { useState } from “react”;
+import React, { useState, useEffect, useMemo } from 'react';
 
-const SYSTEM_PROMPT = `You are an intellectual coach for Joe — a 19-year-old Mechanical Engineering student at FAU Erlangen-Nürnberg with deep interests in geopolitics, defense research, physics, philosophy, criminology, and rhetoric. He thinks at a high conceptual level, is multilingual (Arabic, English, German), and has strong opinions shaped by rigorous self-study. He values directness and despises hedging.
+// --- Constants & Prompts ---
+const USER_PROFILE = `Joe: 19yo Mechanical Engineering student. Interests: geopolitics, military strategy, criminal justice, defense ethics, political philosophy, historical collapse, rhetoric, intelligence, tech & society. Style: High conceptual, direct, values precision, hates hedging.`;
 
-Your two modes:
+const TOPIC_SYSTEM_PROMPT = `You are a specialized essay topic generator for ${USER_PROFILE}. 
+Return ONLY a raw JSON object with no markdown, no backticks, and no explanation:
+{"topic": "a provocative specific essay prompt", "angle": "a non-obvious perspective to consider"}`;
 
-MODE 1 — GENERATE TOPIC:
-Produce a sharp, specific essay prompt tailored to Joe’s interests. Topics should be intellectually provocative. Pull from: geopolitics, military strategy, criminal justice philosophy, physics and society, defense ethics, historical patterns, political philosophy, rhetoric and argumentation.
-Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
-{“topic”: “…”, “angle”: “…”}
+const FEEDBACK_SYSTEM_PROMPT = `Critique this essay for ${USER_PROFILE}. Use direct, honest, and constructive tone. Name specific logical fallacies. No flattery. 
+Return ONLY a raw JSON object:
+{
+  "score": 0-100,
+  "verdict": "2 sentence overall judgment",
+  "strengths": ["point", "point"],
+  "weaknesses": ["point", "point", "point"],
+  "logical_flaws": ["named logical flaw if any"],
+  "rhetoric": "assessment of argumentative effectiveness",
+  "what_to_fix": "single most important improvement",
+  "rewritten_opener": "rewritten version of his first sentence showing a stronger model"
+}`;
 
-MODE 2 — CRITIQUE ESSAY:
-Analyze the essay honestly and constructively.
-Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
-{“score”: <0-100>,“verdict”: “…”,“strengths”: [”…”,”…”],“weaknesses”: [”…”,”…”],“logical_flaws”: [”…”],“rhetoric”: “…”,“what_to_fix”: “…”,“rewritten_opener”: “…”}`;
+const API_URL = "https://api.anthropic.com/v1/messages";
 
-const MODEL = “claude-sonnet-4-20250514”;
+export default function EssayTrainer() {
+  // --- State ---
+  const [phase, setPhase] = useState('idle'); // idle, loading, writing, feedback
+  const [topic, setTopic] = useState({ topic: '', angle: '' });
+  const [essay, setEssay] = useState('');
+  const [feedback, setFeedback] = useState(null);
+  const [error, setError] = useState(null);
 
-const INTERESTS = [
-“geopolitics and military strategy”,
-“criminal justice philosophy”,
-“defense ethics and classified research”,
-“political philosophy and power”,
-“historical patterns of collapse”,
-“rhetoric and argumentation theory”,
-“intelligence agencies and state power”,
-“technology and society”
-];
+  const wordCount = useMemo(() => {
+    return essay.trim() === '' ? 0 : essay.trim().split(/\s+/).length;
+  }, [essay]);
 
-async function callClaude(userMsg) {
-const res = await fetch(“https://api.anthropic.com/v1/messages”, {
-method: “POST”,
-headers: { “Content-Type”: “application/json” },
-body: JSON.stringify({
-model: MODEL,
-max_tokens: 1000,
-system: SYSTEM_PROMPT,
-messages: [{ role: “user”, content: userMsg }]
-})
-});
+  // --- API Logic ---
+  const callClaude = async (system, userMessage) => {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-3-5-sonnet-20240620", // using standard model identifier for environment
+        max_tokens: 1000,
+        system: system,
+        messages: [{ role: "user", content: userMessage }]
+      })
+    });
 
-if (!res.ok) {
-const err = await res.text();
-throw new Error(`API error ${res.status}: ${err}`);
-}
+    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+    
+    const data = await response.json();
+    const clean = data.content[0].text.replace(/```json|```/gi, "").trim();
+    const match = clean.match(/\{[\s\S]*\}/);
+    
+    if (!match) throw new Error("Failed to parse AI response as JSON.");
+    return JSON.parse(match[0]);
+  };
 
-const data = await res.json();
-const raw = data.content?.map(b => b.text || “”).join(””) || “”;
-// Strip any accidental markdown fences
-const clean = raw.replace(/`json|`/gi, “”).trim();
-// Extract first JSON object
-const match = clean.match(/{[\s\S]*}/);
-if (!match) throw new Error(“No JSON found in response: “ + clean.slice(0, 200));
-return JSON.parse(match[0]);
-}
+  const handleGenerateTopic = async () => {
+    setPhase('loading');
+    setError(null);
+    try {
+      const interests = ["geopolitics", "military strategy", "criminal justice philosophy", "defense ethics", "political philosophy", "historical patterns of collapse", "rhetoric and argumentation", "intelligence agencies", "technology and society"];
+      const randomInterest = interests[Math.floor(Math.random() * interests.length)];
+      const result = await callClaude(TOPIC_SYSTEM_PROMPT, `Pick a specific topic regarding: ${randomInterest}`);
+      setTopic(result);
+      setPhase('writing');
+    } catch (err) {
+      setError(err.message);
+      setPhase('idle');
+    }
+  };
 
-const scoreColor = s => s >= 75 ? “#4ade80” : s >= 50 ? “#facc15” : “#f87171”;
+  const handleSubmitEssay = async () => {
+    setPhase('loading');
+    setError(null);
+    try {
+      const result = await callClaude(FEEDBACK_SYSTEM_PROMPT, `Topic: ${topic.topic}\n\nEssay: ${essay}`);
+      setFeedback(result);
+      setPhase('feedback');
+    } catch (err) {
+      setError(err.message);
+      setPhase('writing');
+    }
+  };
 
-function Card({ title, accent, children, mb }) {
-return (
-<div style={{ background: “#0d0d1a”, border: “1px solid #1e1e2e”, borderRadius: 12, padding: “18px 20px”, marginBottom: mb || 0 }}>
-<div style={{ fontSize: 11, color: accent, fontWeight: 700, letterSpacing: 1, textTransform: “uppercase”, marginBottom: 10 }}>{title}</div>
-{children}
-</div>
-);
-}
+  // --- Helper Styles ---
+  const containerStyle = {
+    backgroundColor: '#0a0a0f',
+    color: '#e2e8f0',
+    minHeight: '100vh',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '40px 20px',
+    boxSizing: 'border-box'
+  };
 
-function Section({ title, color, items }) {
-return (
-<div style={{ background: “#0d0d1a”, border: “1px solid #1e1e2e”, borderRadius: 12, padding: “18px” }}>
-<div style={{ fontSize: 11, color, fontWeight: 700, letterSpacing: 1, textTransform: “uppercase”, marginBottom: 12 }}>{title}</div>
-{(items || []).map((item, i) => (
-<p key={i} style={{ color: “#94a3b8”, fontSize: 13, margin: “6px 0”, lineHeight: 1.6 }}>• {item}</p>
-))}
-</div>
-);
-}
+  const cardStyle = {
+    backgroundColor: '#0d0d1a',
+    border: '1px solid #1e1e2e',
+    borderRadius: '16px',
+    padding: '24px',
+    width: '100%',
+    maxWidth: '800px',
+    boxSizing: 'border-box'
+  };
 
-export default function App() {
-const [phase, setPhase] = useState(“idle”);
-const [topic, setTopic] = useState(null);
-const [essay, setEssay] = useState(””);
-const [feedback, setFeedback] = useState(null);
-const [error, setError] = useState(null);
-const [wordCount, setWordCount] = useState(0);
+  const btnPrimary = {
+    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+    color: 'white',
+    border: 'none',
+    padding: '12px 24px',
+    borderRadius: '10px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    fontSize: '1rem'
+  };
 
-const reset = () => { setPhase(“idle”); setTopic(null); setFeedback(null); setEssay(””); setError(null); setWordCount(0); };
+  const btnSecondary = {
+    backgroundColor: 'transparent',
+    border: '1px solid #1e1e2e',
+    color: '#94a3b8',
+    padding: '12px 24px',
+    borderRadius: '10px',
+    cursor: 'pointer'
+  };
 
-const generateTopic = async () => {
-setPhase(“loading”);
-setError(null);
-try {
-const pick = INTERESTS[Math.floor(Math.random() * INTERESTS.length)];
-const result = await callClaude(`Generate a provocative essay topic for Joe in the domain of: ${pick}. Return only raw JSON, no markdown.`);
-setTopic(result);
-setEssay(””);
-setFeedback(null);
-setWordCount(0);
-setPhase(“writing”);
-} catch (e) {
-setError(“Error: “ + e.message);
-setPhase(“idle”);
-}
-};
-
-const submitEssay = async () => {
-if (wordCount < 30) return;
-setPhase(“loading”);
-setError(null);
-try {
-const result = await callClaude(
-`Critique this essay by Joe on: "${topic.topic}"\n\nEssay:\n${essay}\n\nReturn only raw JSON, no markdown.`
-);
-setFeedback(result);
-setPhase(“feedback”);
-} catch (e) {
-setError(“Error: “ + e.message);
-setPhase(“writing”);
-}
-};
-
-const handleEssayChange = e => {
-setEssay(e.target.value);
-setWordCount(e.target.value.trim().split(/\s+/).filter(Boolean).length);
-};
-
-return (
-<div style={{ minHeight: “100vh”, background: “#0a0a0f”, color: “#e2e8f0”, fontFamily: “system-ui, sans-serif” }}>
-{/* Header */}
-<div style={{ borderBottom: “1px solid #1e1e2e”, padding: “18px 28px”, display: “flex”, alignItems: “center”, justifyContent: “space-between”, background: “#0d0d1a” }}>
-<div>
-<div style={{ fontSize: 17, fontWeight: 700, color: “#fff” }}>Essay Trainer</div>
-<div style={{ fontSize: 12, color: “#475569”, marginTop: 2 }}>Sharpen your thinking. No fluff.</div>
-</div>
-{phase !== “idle” && phase !== “loading” && (
-<button onClick={reset} style={{ background: “transparent”, border: “1px solid #2d2d3d”, color: “#94a3b8”, padding: “6px 14px”, borderRadius: 8, fontSize: 13, cursor: “pointer” }}>
-← Restart
-</button>
-)}
-</div>
-
-```
-  <div style={{ maxWidth: 700, margin: "0 auto", padding: "36px 20px" }}>
-
-    {/* IDLE */}
-    {phase === "idle" && (
-      <div style={{ textAlign: "center", paddingTop: 60 }}>
-        <div style={{ fontSize: 40, marginBottom: 14 }}>✍️</div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 10, color: "#f1f5f9" }}>Ready to write?</h1>
-        <p style={{ color: "#64748b", fontSize: 14, marginBottom: 32, lineHeight: 1.7 }}>
-          Get a topic tailored to your interests.<br />Write 2–4 paragraphs. Get direct, honest feedback.
-        </p>
-        {error && (
-          <div style={{ background: "#1a0a0a", border: "1px solid #7f1d1d", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: 13, color: "#f87171", textAlign: "left" }}>
-            {error}
-          </div>
-        )}
-        <button onClick={generateTopic} style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "#fff", padding: "13px 30px", borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 20px rgba(99,102,241,0.3)" }}>
-          Generate my topic →
-        </button>
+  // --- Sub-components ---
+  if (phase === 'loading') {
+    return (
+      <div style={containerStyle}>
+        <style>{`
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          .loader { border: 4px solid #1e1e2e; border-top: 4px solid #6366f1; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        `}</style>
+        <div style={{ marginTop: '20vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="loader"></div>
+          <p style={{ marginTop: '20px', color: '#94a3b8' }}>Thinking...</p>
+        </div>
       </div>
-    )}
+    );
+  }
 
-    {/* LOADING */}
-    {phase === "loading" && (
-      <div style={{ textAlign: "center", paddingTop: 80 }}>
-        <div style={{ width: 36, height: 36, border: "3px solid #1e1e2e", borderTop: "3px solid #6366f1", borderRadius: "50%", margin: "0 auto 16px", animation: "spin 0.8s linear infinite" }} />
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-        <p style={{ color: "#475569", fontSize: 14 }}>Thinking...</p>
-      </div>
-    )}
+  return (
+    <div style={containerStyle}>
+      {/* Error Toast */}
+      {error && (
+        <div style={{ ...cardStyle, border: '1px solid #f87171', marginBottom: '20px', color: '#f87171' }}>
+          <strong>Error:</strong> {error}
+        </div>
+      )}
 
-    {/* WRITING */}
-    {phase === "writing" && topic && (
-      <div>
-        <div style={{ background: "#0d0d1a", border: "1px solid #1e1e2e", borderRadius: 14, padding: "22px", marginBottom: 24 }}>
-          <div style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>Your topic</div>
-          <p style={{ fontSize: 16, lineHeight: 1.65, color: "#f1f5f9", margin: 0, fontWeight: 500 }}>{topic.topic}</p>
-          {topic.angle && (
-            <div style={{ marginTop: 14, padding: "10px 14px", background: "#13131f", borderRadius: 8, borderLeft: "3px solid #6366f1" }}>
-              <span style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 }}>Angle — </span>
-              <span style={{ fontSize: 13, color: "#94a3b8" }}>{topic.angle}</span>
+      {/* Phase 1: Idle */}
+      {phase === 'idle' && (
+        <div style={{ ...cardStyle, textAlign: 'center', marginTop: '10vh' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🎯</div>
+          <h1 style={{ margin: '0 0 12px 0' }}>Socratic Drill</h1>
+          <p style={{ color: '#94a3b8', marginBottom: '32px' }}>High-fidelity essay training for mechanical engineers and strategic thinkers.</p>
+          <button style={btnPrimary} onClick={handleGenerateTopic}>Generate my topic →</button>
+        </div>
+      )}
+
+      {/* Phase 3: Writing */}
+      {phase === 'writing' && (
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', gap: '20px', marginBottom: '24px', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1', minWidth: '300px' }}>
+              <h3 style={{ margin: '0 0 8px 0', color: '#6366f1' }}>Topic</h3>
+              <p style={{ fontSize: '1.2rem', fontWeight: '500', margin: 0 }}>{topic.topic}</p>
             </div>
-          )}
-        </div>
-
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-            <span style={{ fontSize: 13, color: "#64748b" }}>Your argument</span>
-            <span style={{ fontSize: 12, color: wordCount < 30 ? "#f87171" : "#4ade80" }}>
-              {wordCount} words {wordCount < 30 ? "(min 30)" : "✓"}
-            </span>
+            <div style={{ flex: '0.6', minWidth: '240px', backgroundColor: '#1e1e2e', padding: '16px', borderRadius: '12px' }}>
+              <h4 style={{ margin: '0 0 4px 0', fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase' }}>Angle to consider</h4>
+              <p style={{ fontSize: '0.95rem', margin: 0, fontStyle: 'italic' }}>{topic.angle}</p>
+            </div>
           </div>
-          <textarea
-            value={essay}
-            onChange={handleEssayChange}
-            placeholder="Write your argument here. Make a claim and defend it..."
-            style={{ width: "100%", minHeight: 240, background: "#0d0d1a", border: "1px solid #1e1e2e", borderRadius: 12, color: "#e2e8f0", fontSize: 15, lineHeight: 1.7, padding: "16px", resize: "vertical", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
-            onFocus={e => e.target.style.borderColor = "#6366f1"}
-            onBlur={e => e.target.style.borderColor = "#1e1e2e"}
-          />
-        </div>
 
-        {error && <p style={{ color: "#f87171", fontSize: 13, marginBottom: 10 }}>{error}</p>}
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={submitEssay} disabled={wordCount < 30} style={{ flex: 1, background: wordCount >= 30 ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#1a1a2a", border: "none", color: wordCount >= 30 ? "#fff" : "#475569", padding: "13px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: wordCount >= 30 ? "pointer" : "not-allowed" }}>
-            Get feedback →
-          </button>
-          <button onClick={generateTopic} style={{ background: "transparent", border: "1px solid #1e1e2e", color: "#64748b", padding: "13px 18px", borderRadius: 10, fontSize: 14, cursor: "pointer" }}>
-            New topic
-          </button>
-        </div>
-      </div>
-    )}
-
-    {/* FEEDBACK */}
-    {phase === "feedback" && feedback && (
-      <div>
-        <div style={{ textAlign: "center", marginBottom: 28, padding: "28px", background: "#0d0d1a", border: "1px solid #1e1e2e", borderRadius: 16 }}>
-          <div style={{ fontSize: 58, fontWeight: 800, color: scoreColor(feedback.score), lineHeight: 1, marginBottom: 10 }}>
-            {feedback.score}<span style={{ fontSize: 22, color: "#475569" }}>/100</span>
+          <div style={{ position: 'relative' }}>
+            <textarea
+              value={essay}
+              onChange={(e) => setEssay(e.target.value)}
+              placeholder="Structure your argument..."
+              style={{
+                width: '100%',
+                height: '300px',
+                backgroundColor: '#0a0a0f',
+                color: '#e2e8f0',
+                border: '1px solid #1e1e2e',
+                borderRadius: '12px',
+                padding: '16px',
+                fontSize: '1rem',
+                lineHeight: '1.6',
+                resize: 'vertical',
+                boxSizing: 'border-box',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#6366f1'}
+              onBlur={(e) => e.target.style.borderColor = '#1e1e2e'}
+            />
+            <div style={{ 
+              position: 'absolute', 
+              bottom: '12px', 
+              right: '12px', 
+              color: wordCount < 30 ? '#f87171' : '#4ade80',
+              fontSize: '0.85rem',
+              fontWeight: '600'
+            }}>
+              {wordCount} words
+            </div>
           </div>
-          <p style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1.65, margin: 0 }}>{feedback.verdict}</p>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px' }}>
+            <button style={btnSecondary} onClick={handleGenerateTopic}>New topic</button>
+            <button 
+              style={{ 
+                ...btnPrimary, 
+                opacity: wordCount < 30 ? 0.5 : 1, 
+                cursor: wordCount < 30 ? 'not-allowed' : 'pointer' 
+              }} 
+              disabled={wordCount < 30}
+              onClick={handleSubmitEssay}
+            >
+              Get feedback →
+            </button>
+          </div>
         </div>
+      )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-          <Section title="What works" color="#4ade80" items={feedback.strengths} />
-          <Section title="What doesn't" color="#f87171" items={feedback.weaknesses} />
+      {/* Phase 4: Feedback */}
+      {phase === 'feedback' && feedback && (
+        <div style={{ width: '100%', maxWidth: '900px' }}>
+          {/* Header Score Section */}
+          <div style={{ ...cardStyle, textAlign: 'center', marginBottom: '20px' }}>
+            <div style={{ 
+              fontSize: '4rem', 
+              fontWeight: '800', 
+              color: feedback.score >= 75 ? '#4ade80' : feedback.score >= 50 ? '#facc15' : '#f87171' 
+            }}>
+              {feedback.score}
+            </div>
+            <p style={{ fontSize: '1.2rem', fontWeight: '500', maxWidth: '600px', margin: '12px auto 0' }}>{feedback.verdict}</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            {/* Strengths/Weaknesses */}
+            <div style={{ ...cardStyle, borderLeft: '4px solid #4ade80' }}>
+              <h4 style={{ color: '#4ade80', marginTop: 0 }}>What works</h4>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                {feedback.strengths.map((s, i) => <li key={i} style={{ marginBottom: '8px' }}>{s}</li>)}
+              </ul>
+            </div>
+            <div style={{ ...cardStyle, borderLeft: '4px solid #f87171' }}>
+              <h4 style={{ color: '#f87171', marginTop: 0 }}>What doesn't</h4>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                {feedback.weaknesses.map((w, i) => <li key={i} style={{ marginBottom: '8px' }}>{w}</li>)}
+              </ul>
+            </div>
+
+            {/* Logical Flaws */}
+            {feedback.logical_flaws && feedback.logical_flaws.length > 0 && (
+              <div style={{ ...cardStyle, gridColumn: '1 / -1', borderLeft: '4px solid #f59e0b' }}>
+                <h4 style={{ color: '#f59e0b', marginTop: 0 }}>Logical Flaws Detected</h4>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  {feedback.logical_flaws.map((f, i) => (
+                    <span key={i} style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', border: '1px solid #f59e0b' }}>{f}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Detailed Cards */}
+            <div style={{ ...cardStyle, borderLeft: '4px solid #6366f1' }}>
+              <h4 style={{ color: '#6366f1', marginTop: 0 }}>Rhetoric</h4>
+              <p style={{ margin: 0, fontSize: '0.95rem' }}>{feedback.rhetoric}</p>
+            </div>
+            <div style={{ ...cardStyle, borderLeft: '4px solid #8b5cf6' }}>
+              <h4 style={{ color: '#8b5cf6', marginTop: 0 }}>Priority Fix</h4>
+              <p style={{ margin: 0, fontWeight: '600' }}>{feedback.what_to_fix}</p>
+            </div>
+            
+            {/* Opener Rewriting */}
+            <div style={{ ...cardStyle, gridColumn: '1 / -1', borderLeft: '4px solid #06b6d4' }}>
+              <h4 style={{ color: '#06b6d4', marginTop: 0 }}>Revised Opener</h4>
+              <p style={{ margin: 0, fontStyle: 'italic', color: '#e2e8f0', fontSize: '1.1rem' }}>"{feedback.rewritten_opener}"</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '40px', marginBottom: '60px' }}>
+            <button style={btnSecondary} onClick={() => setPhase('writing')}>Revise essay</button>
+            <button style={btnPrimary} onClick={handleGenerateTopic}>New topic →</button>
+          </div>
         </div>
-
-        {feedback.logical_flaws?.length > 0 && (
-          <Card title="Logical flaws" accent="#f59e0b" mb={14}>
-            {feedback.logical_flaws.map((f, i) => (
-              <p key={i} style={{ color: "#94a3b8", fontSize: 14, margin: "5px 0", lineHeight: 1.6 }}>⚠ {f}</p>
-            ))}
-          </Card>
-        )}
-
-        <Card title="Rhetoric" accent="#6366f1" mb={14}>
-          <p style={{ color: "#94a3b8", fontSize: 14, margin: 0, lineHeight: 1.7 }}>{feedback.rhetoric}</p>
-        </Card>
-
-        <Card title="Most important fix" accent="#8b5cf6" mb={14}>
-          <p style={{ color: "#e2e8f0", fontSize: 14, margin: 0, lineHeight: 1.7, fontWeight: 500 }}>{feedback.what_to_fix}</p>
-        </Card>
-
-        {feedback.rewritten_opener && (
-          <Card title="Stronger opener — example" accent="#06b6d4" mb={26}>
-            <p style={{ color: "#e2e8f0", fontSize: 14, margin: 0, lineHeight: 1.7, fontStyle: "italic", borderLeft: "3px solid #06b6d4", paddingLeft: 14 }}>"{feedback.rewritten_opener}"</p>
-          </Card>
-        )}
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={generateTopic} style={{ flex: 1, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "#fff", padding: "13px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
-            New topic →
-          </button>
-          <button onClick={() => { setPhase("writing"); setError(null); }} style={{ background: "transparent", border: "1px solid #1e1e2e", color: "#64748b", padding: "13px 18px", borderRadius: 10, fontSize: 14, cursor: "pointer" }}>
-            Revise essay
-          </button>
-        </div>
-      </div>
-    )}
-  </div>
-</div>
-```
-
-);
+      )}
+    </div>
+  );
 }
