@@ -1,522 +1,269 @@
-import { useState, useEffect, useRef } from “react”;
+import { useState } from “react”;
 
-const SYSTEM_PROMPT = `You are a German language tutor embedded in a personal learning tool built for a specific student. Here is everything you need to know about him:
+const SYSTEM_PROMPT = `You are an intellectual coach for Joe — a 19-year-old Mechanical Engineering student at FAU Erlangen-Nürnberg with deep interests in geopolitics, defense research, physics, philosophy, criminology, and rhetoric. He thinks at a high conceptual level, is multilingual (Arabic, English, German), and has strong opinions shaped by rigorous self-study. He values directness and despises hedging.
 
-His name is Joe. He is 19, originally from an Arabic-speaking country, taught himself English as a side effect of consuming physics content, and is now acquiring German the same way — instrumentally, because his future demands it. He is in his first weeks of B1 German after completing A2. He will be studying Mechanical Engineering (with a focus on nanofabrication, semiconductor metrology, and precision instrumentation) at FAU Erlangen-Nürnberg in Germany.
+Your two modes:
 
-His genuine interests — the things that actually hold his attention — are: foundational physics (quantum mechanics, QFT, general relativity), classified defense and intelligence programs, military history, Nietzsche and existentialism, astrophotography, geopolitics, European intelligence culture, and the gap between what is publicly known and what is actually happening at the frontier of science and technology.
+MODE 1 — GENERATE TOPIC:
+Produce a sharp, specific essay prompt tailored to Joe’s interests. Topics should be intellectually provocative. Pull from: geopolitics, military strategy, criminal justice philosophy, physics and society, defense ethics, historical patterns, political philosophy, rhetoric and argumentation.
+Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
+{“topic”: “…”, “angle”: “…”}
 
-Your job is to use his accumulated learning material (vocabulary, grammar rules, patterns) to generate content that feels alive to him — not generic textbook German. When you write a story, it should involve a physicist, a soldier, an intelligence analyst, a student arriving in a new country, a philosopher — not a man buying bread. The German should be beautiful and precise, not dumbed down beyond recognition, but calibrated to early B1: clear sentence structures, known grammar patterns, vocabulary he has actually studied.
+MODE 2 — CRITIQUE ESSAY:
+Analyze the essay honestly and constructively.
+Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
+{“score”: <0-100>,“verdict”: “…”,“strengths”: [”…”,”…”],“weaknesses”: [”…”,”…”],“logical_flaws”: [”…”],“rhetoric”: “…”,“what_to_fix”: “…”,“rewritten_opener”: “…”}`;
 
-CONTENT TYPES you will be asked to generate:
+const MODEL = “claude-sonnet-4-20250514”;
 
-1. STORY: A 200–300 word German short story. Use the provided vocabulary and grammar patterns naturally woven into a narrative. The topic should reflect Joe’s interests unless he specifies otherwise. Include an English summary at the end in italics.
-1. SUMMARY: A 200–300 word German summary of an interesting topic (physics concept, historical event, intelligence operation, philosophical idea — whatever Joe requests). Written at B1 level using his vocabulary where possible. Include key terms bolded.
-1. EXERCISES: Generate 8–10 targeted grammar exercises based on the grammar patterns in his material. Mix gap-fills, sentence transformation, and one short translation task. Provide an answer key at the end separated by —ANSWERS—.
-1. PROMPT: Give Joe a writing prompt (2–3 sentences in German) that he should respond to in 100–150 words. The prompt should connect to something he finds genuinely interesting. Also give one example response to show the register and level expected.
+const INTERESTS = [
+“geopolitics and military strategy”,
+“criminal justice philosophy”,
+“defense ethics and classified research”,
+“political philosophy and power”,
+“historical patterns of collapse”,
+“rhetoric and argumentation theory”,
+“intelligence agencies and state power”,
+“technology and society”
+];
 
-LANGUAGE RULES:
+async function callClaude(userMsg) {
+const res = await fetch(“https://api.anthropic.com/v1/messages”, {
+method: “POST”,
+headers: { “Content-Type”: “application/json” },
+body: JSON.stringify({
+model: MODEL,
+max_tokens: 1000,
+system: SYSTEM_PROMPT,
+messages: [{ role: “user”, content: userMsg }]
+})
+});
 
-- Stories and summaries: entirely in German with a short English note at the end
-- Exercises: instructions in English, sentences in German
-- Always use vocabulary and grammar from the provided material
-- B1 level: subordinate clauses (weil, dass, obwohl, wenn), adjective declension, modal verbs in Präteritum, comparatives/superlatives, Perfekt and Präteritum mixed naturally
-- Never write down to him. He is intelligent. The German should feel worth reading.
+if (!res.ok) {
+const err = await res.text();
+throw new Error(`API error ${res.status}: ${err}`);
+}
 
-The student’s accumulated learning material will be provided in each request. Prioritize recently added material for exercises but use the full history for stories and summaries to create natural spaced repetition.`;
+const data = await res.json();
+const raw = data.content?.map(b => b.text || “”).join(””) || “”;
+// Strip any accidental markdown fences
+const clean = raw.replace(/`json|`/gi, “”).trim();
+// Extract first JSON object
+const match = clean.match(/{[\s\S]*}/);
+if (!match) throw new Error(“No JSON found in response: “ + clean.slice(0, 200));
+return JSON.parse(match[0]);
+}
 
-const STORAGE_KEY = “joe-german-materials”;
-const SESSIONS_KEY = “joe-german-sessions”;
+const scoreColor = s => s >= 75 ? “#4ade80” : s >= 50 ? “#facc15” : “#f87171”;
 
-const typeLabels = {
-story: { label: “Story”, icon: “◈”, desc: “A short story built from your material” },
-summary: { label: “Summary”, icon: “◉”, desc: “A topic summarized in your German” },
-exercises: { label: “Exercises”, icon: “◇”, desc: “Targeted grammar drills” },
-prompt: { label: “Writing Prompt”, icon: “◎”, desc: “A prompt for you to respond to” },
-};
+function Card({ title, accent, children, mb }) {
+return (
+<div style={{ background: “#0d0d1a”, border: “1px solid #1e1e2e”, borderRadius: 12, padding: “18px 20px”, marginBottom: mb || 0 }}>
+<div style={{ fontSize: 11, color: accent, fontWeight: 700, letterSpacing: 1, textTransform: “uppercase”, marginBottom: 10 }}>{title}</div>
+{children}
+</div>
+);
+}
+
+function Section({ title, color, items }) {
+return (
+<div style={{ background: “#0d0d1a”, border: “1px solid #1e1e2e”, borderRadius: 12, padding: “18px” }}>
+<div style={{ fontSize: 11, color, fontWeight: 700, letterSpacing: 1, textTransform: “uppercase”, marginBottom: 12 }}>{title}</div>
+{(items || []).map((item, i) => (
+<p key={i} style={{ color: “#94a3b8”, fontSize: 13, margin: “6px 0”, lineHeight: 1.6 }}>• {item}</p>
+))}
+</div>
+);
+}
 
 export default function App() {
-const [materials, setMaterials] = useState([]);
-const [sessions, setSessions] = useState([]);
-const [view, setView] = useState(“generate”); // generate | materials | history
-const [newMaterial, setNewMaterial] = useState(””);
-const [materialLabel, setMaterialLabel] = useState(””);
-const [contentType, setContentType] = useState(“story”);
-const [topic, setTopic] = useState(””);
-const [loading, setLoading] = useState(false);
-const [currentOutput, setCurrentOutput] = useState(null);
-const [streamText, setStreamText] = useState(””);
+const [phase, setPhase] = useState(“idle”);
+const [topic, setTopic] = useState(null);
+const [essay, setEssay] = useState(””);
+const [feedback, setFeedback] = useState(null);
 const [error, setError] = useState(null);
-const outputRef = useRef(null);
+const [wordCount, setWordCount] = useState(0);
 
-useEffect(() => {
-const saved = localStorage.getItem(STORAGE_KEY);
-if (saved) setMaterials(JSON.parse(saved));
-const savedSessions = localStorage.getItem(SESSIONS_KEY);
-if (savedSessions) setSessions(JSON.parse(savedSessions));
-}, []);
+const reset = () => { setPhase(“idle”); setTopic(null); setFeedback(null); setEssay(””); setError(null); setWordCount(0); };
 
-const saveMaterials = (m) => {
-setMaterials(m);
-localStorage.setItem(STORAGE_KEY, JSON.stringify(m));
-};
-
-const saveSessions = (s) => {
-setSessions(s);
-localStorage.setItem(SESSIONS_KEY, JSON.stringify(s));
-};
-
-const addMaterial = () => {
-if (!newMaterial.trim()) return;
-const entry = {
-id: Date.now(),
-label: materialLabel.trim() || `Session ${materials.length + 1}`,
-content: newMaterial.trim(),
-date: new Date().toLocaleDateString(“en-GB”, { day: “numeric”, month: “short”, year: “numeric” }),
-};
-const updated = […materials, entry];
-saveMaterials(updated);
-setNewMaterial(””);
-setMaterialLabel(””);
-};
-
-const deleteMaterial = (id) => {
-saveMaterials(materials.filter((m) => m.id !== id));
-};
-
-const buildPrompt = () => {
-const allMaterial = materials.map((m) => `[${m.label} — ${m.date}]\n${m.content}`).join(”\n\n—\n\n”);
-const recentMaterial = materials.slice(-3).map((m) => `[${m.label} — ${m.date}]\n${m.content}`).join(”\n\n—\n\n”);
-
-```
-return `Generate a ${contentType.toUpperCase()} for Joe.
-```
-
-${topic ? `Requested topic or focus: ${topic}` : “”}
-
-FULL ACCUMULATED MATERIAL (use for stories, summaries, spaced repetition):
-${allMaterial || “No material added yet — generate something interesting at B1 level based on his interests.”}
-
-MOST RECENT MATERIAL (prioritize for exercises):
-${recentMaterial || “Same as above.”}
-
-Generate the ${contentType} now.`;
-};
-
-const generate = async () => {
-setLoading(true);
+const generateTopic = async () => {
+setPhase(“loading”);
 setError(null);
-setStreamText(””);
-setCurrentOutput(null);
-setTimeout(() => outputRef.current?.scrollIntoView({ behavior: “smooth” }), 100);
-
-```
 try {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: buildPrompt() }],
-    }),
-  });
-
-  const data = await response.json();
-  const text = data.content?.map((b) => b.text || "").join("") || "";
-
-  const session = {
-    id: Date.now(),
-    type: contentType,
-    topic: topic || null,
-    output: text,
-    date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-    time: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
-    materialCount: materials.length,
-  };
-
-  saveSessions([session, ...sessions]);
-  setCurrentOutput(session);
-  setTopic("");
+const pick = INTERESTS[Math.floor(Math.random() * INTERESTS.length)];
+const result = await callClaude(`Generate a provocative essay topic for Joe in the domain of: ${pick}. Return only raw JSON, no markdown.`);
+setTopic(result);
+setEssay(””);
+setFeedback(null);
+setWordCount(0);
+setPhase(“writing”);
 } catch (e) {
-  setError("Something went wrong. Check your connection.");
+setError(“Error: “ + e.message);
+setPhase(“idle”);
 }
-
-setLoading(false);
-```
-
 };
 
-const formatOutput = (text) => {
-if (!text) return null;
-const parts = text.split(”—ANSWERS—”);
-if (parts.length === 2) {
-return (
-<div>
-<div className=“output-body” dangerouslySetInnerHTML={{ __html: renderText(parts[0]) }} />
-<div className="answers-divider">
-<span>ANSWERS</span>
-</div>
-<div className=“output-body answers” dangerouslySetInnerHTML={{ __html: renderText(parts[1]) }} />
-</div>
+const submitEssay = async () => {
+if (wordCount < 30) return;
+setPhase(“loading”);
+setError(null);
+try {
+const result = await callClaude(
+`Critique this essay by Joe on: "${topic.topic}"\n\nEssay:\n${essay}\n\nReturn only raw JSON, no markdown.`
 );
+setFeedback(result);
+setPhase(“feedback”);
+} catch (e) {
+setError(“Error: “ + e.message);
+setPhase(“writing”);
 }
-return <div className=“output-body” dangerouslySetInnerHTML={{ __html: renderText(text) }} />;
 };
 
-const renderText = (text) => {
-return text
-.replace(/**(.*?)**/g, “<strong>$1</strong>”)
-.replace(/*(.*?)*/g, “<em>$1</em>”)
-.replace(/\n\n/g, “</p><p>”)
-.replace(/\n/g, “<br/>”)
-.replace(/^/, “<p>”)
-.replace(/$/, “</p>”);
+const handleEssayChange = e => {
+setEssay(e.target.value);
+setWordCount(e.target.value.trim().split(/\s+/).filter(Boolean).length);
 };
 
 return (
-<div className="app">
-<style>{`
-@import url(‘https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap’);
+<div style={{ minHeight: “100vh”, background: “#0a0a0f”, color: “#e2e8f0”, fontFamily: “system-ui, sans-serif” }}>
+{/* Header */}
+<div style={{ borderBottom: “1px solid #1e1e2e”, padding: “18px 28px”, display: “flex”, alignItems: “center”, justifyContent: “space-between”, background: “#0d0d1a” }}>
+<div>
+<div style={{ fontSize: 17, fontWeight: 700, color: “#fff” }}>Essay Trainer</div>
+<div style={{ fontSize: 12, color: “#475569”, marginTop: 2 }}>Sharpen your thinking. No fluff.</div>
+</div>
+{phase !== “idle” && phase !== “loading” && (
+<button onClick={reset} style={{ background: “transparent”, border: “1px solid #2d2d3d”, color: “#94a3b8”, padding: “6px 14px”, borderRadius: 8, fontSize: 13, cursor: “pointer” }}>
+← Restart
+</button>
+)}
+</div>
 
 ```
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  <div style={{ maxWidth: 700, margin: "0 auto", padding: "36px 20px" }}>
 
-    :root {
-      --bg: #0e0e11;
-      --surface: #16161a;
-      --surface2: #1e1e24;
-      --surface3: #26262e;
-      --border: rgba(255,255,255,0.07);
-      --border-active: rgba(255,255,255,0.18);
-      --accent: #c8a96e;
-      --accent2: #7c9ec9;
-      --text: #e8e6e0;
-      --text-dim: #8a8880;
-      --text-dimmer: #4a4845;
-      --danger: #c96e6e;
-      --success: #6ec98a;
-      --radius: 12px;
-      --radius-sm: 8px;
-    }
-
-    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
-
-    .app { max-width: 860px; margin: 0 auto; padding: 0 20px 80px; }
-
-    /* HEADER */
-    .header { padding: 48px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 36px; }
-    .header-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
-    .header-title { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 400; color: var(--text); line-height: 1.1; }
-    .header-title span { color: var(--accent); font-style: italic; }
-    .header-sub { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 8px; }
-    .material-badge { font-family: 'DM Mono', monospace; font-size: 0.7rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; color: var(--accent); letter-spacing: 0.08em; white-space: nowrap; }
-
-    /* NAV */
-    .nav { display: flex; gap: 4px; margin-bottom: 36px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; }
-    .nav-btn { flex: 1; padding: 10px; font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; background: none; border: none; color: var(--text-dim); cursor: pointer; border-radius: var(--radius-sm); transition: all 0.2s; }
-    .nav-btn.active { background: var(--surface3); color: var(--text); border: 1px solid var(--border-active); }
-    .nav-btn:hover:not(.active) { color: var(--text); background: var(--surface2); }
-
-    /* SECTIONS */
-    .section-label { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dimmer); margin-bottom: 12px; }
-
-    /* TYPE GRID */
-    .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 28px; }
-    .type-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; cursor: pointer; transition: all 0.2s; text-align: left; }
-    .type-card.selected { border-color: var(--accent); background: rgba(200, 169, 110, 0.06); }
-    .type-card:hover:not(.selected) { border-color: var(--border-active); background: var(--surface2); }
-    .type-icon { font-size: 1.1rem; color: var(--accent); margin-bottom: 6px; display: block; }
-    .type-name { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--text); letter-spacing: 0.06em; text-transform: uppercase; }
-    .type-desc { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
-
-    /* INPUTS */
-    .input-group { margin-bottom: 20px; }
-    textarea, input[type="text"] {
-      width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; line-height: 1.6;
-      padding: 14px 16px; resize: vertical; outline: none; transition: border 0.2s;
-    }
-    textarea:focus, input[type="text"]:focus { border-color: var(--border-active); }
-    textarea { min-height: 80px; }
-    ::placeholder { color: var(--text-dimmer); }
-
-    /* BUTTON */
-    .btn-primary {
-      width: 100%; padding: 16px; background: var(--accent); color: #0e0e0a;
-      font-family: 'DM Mono', monospace; font-size: 0.8rem; letter-spacing: 0.12em;
-      text-transform: uppercase; border: none; border-radius: var(--radius-sm);
-      cursor: pointer; font-weight: 500; transition: all 0.2s;
-    }
-    .btn-primary:hover:not(:disabled) { background: #d4b87a; transform: translateY(-1px); }
-    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-    .btn-secondary {
-      padding: 10px 18px; background: var(--surface2); color: var(--text-dim);
-      font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.08em;
-      text-transform: uppercase; border: 1px solid var(--border); border-radius: var(--radius-sm);
-      cursor: pointer; transition: all 0.2s;
-    }
-    .btn-secondary:hover { color: var(--text); border-color: var(--border-active); }
-
-    .btn-danger {
-      padding: 6px 12px; background: none; color: var(--text-dimmer);
-      font-family: 'DM Mono', monospace; font-size: 0.68rem;
-      border: 1px solid transparent; border-radius: var(--radius-sm);
-      cursor: pointer; transition: all 0.2s;
-    }
-    .btn-danger:hover { color: var(--danger); border-color: rgba(201,110,110,0.3); }
-
-    /* NO MATERIAL WARNING */
-    .warn-box { background: rgba(200,169,110,0.06); border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 20px; font-size: 0.82rem; color: var(--accent); line-height: 1.5; }
-
-    /* OUTPUT */
-    .output-wrap { margin-top: 36px; }
-    .output-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-    .output-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-    .output-meta { display: flex; align-items: center; gap: 12px; }
-    .output-type { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
-    .output-date { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--text-dimmer); }
-    .output-body { padding: 24px; font-family: 'DM Sans', sans-serif; font-size: 0.92rem; line-height: 1.85; color: var(--text); }
-    .output-body p { margin-bottom: 14px; }
-    .output-body p:last-child { margin-bottom: 0; }
-    .output-body strong { color: var(--accent); font-weight: 500; }
-    .output-body em { color: var(--text-dim); font-style: italic; }
-    .answers-divider { padding: 10px 24px; background: var(--surface2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dimmer); }
-    .answers { background: var(--surface2); }
-
-    /* LOADING */
-    .loading-wrap { padding: 48px 24px; text-align: center; }
-    .loading-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; }
-    .dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 1.4s ease-in-out infinite; }
-    .dot:nth-child(2) { animation-delay: 0.2s; }
-    .dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes pulse { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
-    .loading-text { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
-
-    /* MATERIALS VIEW */
-    .materials-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
-    .material-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 18px; }
-    .material-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .material-card-label { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text); letter-spacing: 0.06em; }
-    .material-card-date { font-family: 'DM Mono', monospace; font-size: 0.66rem; color: var(--text-dimmer); }
-    .material-card-content { font-size: 0.82rem; color: var(--text-dim); line-height: 1.6; white-space: pre-wrap; max-height: 120px; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%); mask-image: linear-gradient(to bottom, black 60%, transparent 100%); }
-    .empty-state { text-align: center; padding: 60px 20px; }
-    .empty-icon { font-size: 2rem; margin-bottom: 12px; color: var(--text-dimmer); }
-    .empty-text { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text-dimmer); letter-spacing: 0.08em; line-height: 1.7; }
-
-    /* ADD MATERIAL */
-    .add-material-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
-    .form-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start; }
-
-    /* HISTORY VIEW */
-    .history-list { display: flex; flex-direction: column; gap: 12px; }
-    .history-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; transition: border 0.2s; }
-    .history-card:hover { border-color: var(--border-active); }
-    .history-card.open { border-color: rgba(200,169,110,0.3); }
-    .history-card-header { padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; }
-    .history-card-left { display: flex; align-items: center; gap: 12px; }
-    .history-type-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-    .history-info { display: flex; flex-direction: column; gap: 3px; }
-    .history-type { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--text); letter-spacing: 0.06em; text-transform: uppercase; }
-    .history-topic { font-size: 0.78rem; color: var(--text-dim); }
-    .history-datetime { font-family: 'DM Mono', monospace; font-size: 0.66rem; color: var(--text-dimmer); text-align: right; line-height: 1.5; }
-    .history-body { border-top: 1px solid var(--border); }
-
-    /* ERROR */
-    .error-box { background: rgba(201,110,110,0.08); border: 1px solid rgba(201,110,110,0.25); border-radius: var(--radius-sm); padding: 14px 16px; margin-top: 16px; font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--danger); }
-
-    @media (max-width: 600px) {
-      .type-grid { grid-template-columns: 1fr; }
-      .header-title { font-size: 1.6rem; }
-      .form-row { flex-direction: column; }
-    }
-  `}</style>
-
-  <div className="header">
-    <div className="header-top">
-      <div>
-        <h1 className="header-title">Auf <span>Deutsch</span></h1>
-        <p className="header-sub">Personal German · Early B1 · FAU-bound</p>
-      </div>
-      <div className="material-badge">
-        {materials.length} {materials.length === 1 ? "session" : "sessions"} loaded
-      </div>
-    </div>
-  </div>
-
-  <nav className="nav">
-    {[["generate", "Generate"], ["materials", "Materials"], ["history", "History"]].map(([key, label]) => (
-      <button key={key} className={`nav-btn ${view === key ? "active" : ""}`} onClick={() => setView(key)}>
-        {label}
-      </button>
-    ))}
-  </nav>
-
-  {/* GENERATE VIEW */}
-  {view === "generate" && (
-    <div>
-      <p className="section-label">Content Type</p>
-      <div className="type-grid">
-        {Object.entries(typeLabels).map(([key, val]) => (
-          <button key={key} className={`type-card ${contentType === key ? "selected" : ""}`} onClick={() => setContentType(key)}>
-            <span className="type-icon">{val.icon}</span>
-            <div className="type-name">{val.label}</div>
-            <div className="type-desc">{val.desc}</div>
-          </button>
-        ))}
-      </div>
-
-      <div className="input-group">
-        <p className="section-label" style={{ marginBottom: 10 }}>Topic or focus <span style={{ color: "var(--text-dimmer)" }}>(optional)</span></p>
-        <input
-          type="text"
-          placeholder={contentType === "story" ? "e.g. a physicist arriving in Erlangen..." : contentType === "summary" ? "e.g. quantum entanglement, Operation AZORIAN..." : contentType === "exercises" ? "e.g. focus on adjective declension..." : "e.g. something about decisions and consequences..."}
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-        />
-      </div>
-
-      {materials.length === 0 && (
-        <div className="warn-box">
-          No material added yet. You can still generate — it will use your B1 level and interests. Add your class material under <strong>Materials</strong> to make this truly yours.
-        </div>
-      )}
-
-      <button className="btn-primary" onClick={generate} disabled={loading}>
-        {loading ? "Generating..." : `Generate ${typeLabels[contentType].label}`}
-      </button>
-
-      {error && <div className="error-box">{error}</div>}
-
-      <div ref={outputRef}>
-        {loading && (
-          <div className="output-wrap">
-            <div className="output-card">
-              <div className="loading-wrap">
-                <div className="loading-dots">
-                  <div className="dot" /><div className="dot" /><div className="dot" />
-                </div>
-                <p className="loading-text">Writing in German...</p>
-              </div>
-            </div>
+    {/* IDLE */}
+    {phase === "idle" && (
+      <div style={{ textAlign: "center", paddingTop: 60 }}>
+        <div style={{ fontSize: 40, marginBottom: 14 }}>✍️</div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 10, color: "#f1f5f9" }}>Ready to write?</h1>
+        <p style={{ color: "#64748b", fontSize: 14, marginBottom: 32, lineHeight: 1.7 }}>
+          Get a topic tailored to your interests.<br />Write 2–4 paragraphs. Get direct, honest feedback.
+        </p>
+        {error && (
+          <div style={{ background: "#1a0a0a", border: "1px solid #7f1d1d", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: 13, color: "#f87171", textAlign: "left" }}>
+            {error}
           </div>
         )}
-
-        {currentOutput && !loading && (
-          <div className="output-wrap">
-            <div className="output-card">
-              <div className="output-header">
-                <div className="output-meta">
-                  <span className="output-type">{typeLabels[currentOutput.type].label}</span>
-                  {currentOutput.topic && <span className="output-date">· {currentOutput.topic}</span>}
-                </div>
-                <span className="output-date">{currentOutput.time} · {currentOutput.date}</span>
-              </div>
-              {formatOutput(currentOutput.output)}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )}
-
-  {/* MATERIALS VIEW */}
-  {view === "materials" && (
-    <div>
-      <p className="section-label" style={{ marginBottom: 16 }}>Your Learning Material</p>
-
-      {materials.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">◈</div>
-          <p className="empty-text">No material yet.<br />Add your vocab lists, grammar rules,<br />or notes from class below.</p>
-        </div>
-      ) : (
-        <div className="materials-list">
-          {materials.map((m) => (
-            <div key={m.id} className="material-card">
-              <div className="material-card-header">
-                <div>
-                  <div className="material-card-label">{m.label}</div>
-                  <div className="material-card-date">{m.date}</div>
-                </div>
-                <button className="btn-danger" onClick={() => deleteMaterial(m.id)}>Remove</button>
-              </div>
-              <div className="material-card-content">{m.content}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="add-material-form">
-        <p className="section-label" style={{ marginBottom: 14 }}>Add New Material</p>
-        <div className="form-row">
-          <input
-            type="text"
-            placeholder="Label — e.g. Week 3 · Adjektive"
-            value={materialLabel}
-            onChange={(e) => setMaterialLabel(e.target.value)}
-            style={{ flex: 1 }}
-          />
-        </div>
-        <div className="input-group">
-          <textarea
-            placeholder="Paste your vocab list, grammar rules, notes from class, or any German material here. You can describe pictures: 'Sheet showed 20 verbs with Dativ: helfen, danken, folgen...' — whatever you learned."
-            value={newMaterial}
-            onChange={(e) => setNewMaterial(e.target.value)}
-            style={{ minHeight: 140 }}
-          />
-        </div>
-        <button className="btn-primary" onClick={addMaterial} disabled={!newMaterial.trim()}>
-          Add to Material Bank
+        <button onClick={generateTopic} style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "#fff", padding: "13px 30px", borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: "pointer", boxShadow: "0 4px 20px rgba(99,102,241,0.3)" }}>
+          Generate my topic →
         </button>
       </div>
-    </div>
-  )}
+    )}
 
-  {/* HISTORY VIEW */}
-  {view === "history" && (
-    <div>
-      <p className="section-label" style={{ marginBottom: 16 }}>Generated Sessions</p>
-      {sessions.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">◉</div>
-          <p className="empty-text">Nothing generated yet.<br />Go to Generate to create your first piece.</p>
+    {/* LOADING */}
+    {phase === "loading" && (
+      <div style={{ textAlign: "center", paddingTop: 80 }}>
+        <div style={{ width: 36, height: 36, border: "3px solid #1e1e2e", borderTop: "3px solid #6366f1", borderRadius: "50%", margin: "0 auto 16px", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <p style={{ color: "#475569", fontSize: 14 }}>Thinking...</p>
+      </div>
+    )}
+
+    {/* WRITING */}
+    {phase === "writing" && topic && (
+      <div>
+        <div style={{ background: "#0d0d1a", border: "1px solid #1e1e2e", borderRadius: 14, padding: "22px", marginBottom: 24 }}>
+          <div style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, letterSpacing: 1, marginBottom: 8, textTransform: "uppercase" }}>Your topic</div>
+          <p style={{ fontSize: 16, lineHeight: 1.65, color: "#f1f5f9", margin: 0, fontWeight: 500 }}>{topic.topic}</p>
+          {topic.angle && (
+            <div style={{ marginTop: 14, padding: "10px 14px", background: "#13131f", borderRadius: 8, borderLeft: "3px solid #6366f1" }}>
+              <span style={{ fontSize: 11, color: "#6366f1", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8 }}>Angle — </span>
+              <span style={{ fontSize: 13, color: "#94a3b8" }}>{topic.angle}</span>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="history-list">
-          {sessions.map((s) => (
-            <HistoryCard key={s.id} session={s} formatOutput={formatOutput} typeLabels={typeLabels} />
-          ))}
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+            <span style={{ fontSize: 13, color: "#64748b" }}>Your argument</span>
+            <span style={{ fontSize: 12, color: wordCount < 30 ? "#f87171" : "#4ade80" }}>
+              {wordCount} words {wordCount < 30 ? "(min 30)" : "✓"}
+            </span>
+          </div>
+          <textarea
+            value={essay}
+            onChange={handleEssayChange}
+            placeholder="Write your argument here. Make a claim and defend it..."
+            style={{ width: "100%", minHeight: 240, background: "#0d0d1a", border: "1px solid #1e1e2e", borderRadius: 12, color: "#e2e8f0", fontSize: 15, lineHeight: 1.7, padding: "16px", resize: "vertical", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+            onFocus={e => e.target.style.borderColor = "#6366f1"}
+            onBlur={e => e.target.style.borderColor = "#1e1e2e"}
+          />
         </div>
-      )}
-    </div>
-  )}
+
+        {error && <p style={{ color: "#f87171", fontSize: 13, marginBottom: 10 }}>{error}</p>}
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={submitEssay} disabled={wordCount < 30} style={{ flex: 1, background: wordCount >= 30 ? "linear-gradient(135deg, #6366f1, #8b5cf6)" : "#1a1a2a", border: "none", color: wordCount >= 30 ? "#fff" : "#475569", padding: "13px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: wordCount >= 30 ? "pointer" : "not-allowed" }}>
+            Get feedback →
+          </button>
+          <button onClick={generateTopic} style={{ background: "transparent", border: "1px solid #1e1e2e", color: "#64748b", padding: "13px 18px", borderRadius: 10, fontSize: 14, cursor: "pointer" }}>
+            New topic
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* FEEDBACK */}
+    {phase === "feedback" && feedback && (
+      <div>
+        <div style={{ textAlign: "center", marginBottom: 28, padding: "28px", background: "#0d0d1a", border: "1px solid #1e1e2e", borderRadius: 16 }}>
+          <div style={{ fontSize: 58, fontWeight: 800, color: scoreColor(feedback.score), lineHeight: 1, marginBottom: 10 }}>
+            {feedback.score}<span style={{ fontSize: 22, color: "#475569" }}>/100</span>
+          </div>
+          <p style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1.65, margin: 0 }}>{feedback.verdict}</p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <Section title="What works" color="#4ade80" items={feedback.strengths} />
+          <Section title="What doesn't" color="#f87171" items={feedback.weaknesses} />
+        </div>
+
+        {feedback.logical_flaws?.length > 0 && (
+          <Card title="Logical flaws" accent="#f59e0b" mb={14}>
+            {feedback.logical_flaws.map((f, i) => (
+              <p key={i} style={{ color: "#94a3b8", fontSize: 14, margin: "5px 0", lineHeight: 1.6 }}>⚠ {f}</p>
+            ))}
+          </Card>
+        )}
+
+        <Card title="Rhetoric" accent="#6366f1" mb={14}>
+          <p style={{ color: "#94a3b8", fontSize: 14, margin: 0, lineHeight: 1.7 }}>{feedback.rhetoric}</p>
+        </Card>
+
+        <Card title="Most important fix" accent="#8b5cf6" mb={14}>
+          <p style={{ color: "#e2e8f0", fontSize: 14, margin: 0, lineHeight: 1.7, fontWeight: 500 }}>{feedback.what_to_fix}</p>
+        </Card>
+
+        {feedback.rewritten_opener && (
+          <Card title="Stronger opener — example" accent="#06b6d4" mb={26}>
+            <p style={{ color: "#e2e8f0", fontSize: 14, margin: 0, lineHeight: 1.7, fontStyle: "italic", borderLeft: "3px solid #06b6d4", paddingLeft: 14 }}>"{feedback.rewritten_opener}"</p>
+          </Card>
+        )}
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={generateTopic} style={{ flex: 1, background: "linear-gradient(135deg, #6366f1, #8b5cf6)", border: "none", color: "#fff", padding: "13px", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+            New topic →
+          </button>
+          <button onClick={() => { setPhase("writing"); setError(null); }} style={{ background: "transparent", border: "1px solid #1e1e2e", color: "#64748b", padding: "13px 18px", borderRadius: 10, fontSize: 14, cursor: "pointer" }}>
+            Revise essay
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
 </div>
 ```
 
-);
-}
-
-function HistoryCard({ session, formatOutput, typeLabels }) {
-const [open, setOpen] = useState(false);
-return (
-<div className={`history-card ${open ? "open" : ""}`}>
-<div className=“history-card-header” onClick={() => setOpen(!open)}>
-<div className="history-card-left">
-<div className="history-type-dot" />
-<div className="history-info">
-<span className="history-type">{typeLabels[session.type]?.label}</span>
-{session.topic && <span className="history-topic">{session.topic}</span>}
-</div>
-</div>
-<div className="history-datetime">
-<div>{session.time}</div>
-<div>{session.date}</div>
-</div>
-</div>
-{open && <div className="history-body">{formatOutput(session.output)}</div>}
-</div>
 );
 }
